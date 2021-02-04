@@ -5,21 +5,22 @@
  */
 export function createGetter(path) {
   //npm test 03-objects-arrays-intro-to-testing/1-create-getter/index.spec.js
-  function getObjByLevel(path, obj) {
+  const arrNodes = path.split('.');
+  function getObjByLevel(arrNd, obj) {
     //получаем root свойство текущего уровня
-    const [first,...other] = path.split('.');
+    const [first,...other] = arrNd;
     //если дошли до нижнего уровня, то возвращаем свойство объекта (если такого свойстава нет, то вернет undefined)
     if (other.length === 0) 
         return obj[first];
     const objKeys = Object.keys(obj);
     if (objKeys?.includes(first)) {//если в объекте существует заданный ключ, то рекурсивно спускаемся на уровень ниже
-        return getObjByLevel(other.join('.'), obj[first]);
+        return getObjByLevel(other, obj[first]);
     }
     else // иначе возращаем undefined
-        return undefined;
+        return;
   }
 
   return function(obj) {
-      return getObjByLevel(path, obj);
+      return getObjByLevel(arrNodes, obj);
   }
 }
