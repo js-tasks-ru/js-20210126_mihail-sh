@@ -1,18 +1,18 @@
-import SortableTable from './index';
+import SortableTable from './index.js';
 
-import data from './__mocks__/products-data';
+import { products, bestsellers } from './__mocks__/products-data.js';
 
-const header = [
+const headerConfig = [
   {
     id: 'images',
     title: 'Image',
     sortable: false,
-    template: data => {
+    template: products => {
       return `
-          <div class="sortable-table__cell">
-            <img class="sortable-table-image" alt="Image" src="${data[0].url}">
-          </div>
-        `;
+        <div class="sortable-table__cell">
+          <img class="sortable-table-image" alt="Image" src="${products[0].url}">
+        </div>
+      `;
     }
   },
   {
@@ -38,9 +38,9 @@ const header = [
     title: 'Status',
     sortable: true,
     sortType: 'number',
-    template: data => {
+    template: products => {
       return `<div class="sortable-table__cell">
-        ${data > 0 ? 'Active' : 'Inactive'}
+        ${products > 0 ? 'Active' : 'Inactive'}
       </div>`;
     }
   },
@@ -52,8 +52,12 @@ describe('async-code-fetch-api-part-1/sortable-table-v3', () => {
   beforeEach(() => {
     fetchMock.resetMocks();
 
-    sortableTable = new SortableTable(header, {
-      url: 'api/rest/products'
+    sortableTable = new SortableTable(headerConfig, {
+      url: 'api/rest/products',
+      sorted: {
+        id: headerConfig.find(item => item.sortable).id,
+        order: 'asc'
+      }
     });
 
     document.body.append(sortableTable.element);
@@ -77,9 +81,8 @@ describe('async-code-fetch-api-part-1/sortable-table-v3', () => {
     expect(fetchMock.mock.calls.length).toEqual(1);
   });
 
-
   it('should render loaded data correctly', async() => {
-    fetchMock.mockResponseOnce(JSON.stringify(data));
+    fetchMock.mockResponseOnce(JSON.stringify(products));
 
     await sortableTable.render();
 
@@ -94,8 +97,37 @@ describe('async-code-fetch-api-part-1/sortable-table-v3', () => {
     expect(row3).toHaveTextContent('13.3\" Ультрабук ASUS VivoBook S13 S330FA-EY127T серебристый');
   });
 
-  it('should sort data correctly', async() => {
-    fetchMock.mockResponseOnce(JSON.stringify(data));
+  it('should call "sortOnClient" for sorting on the client side', async () => {
+    const sortableTable = new SortableTable(headerConfig, {
+      url: 'api/dashboard/bestsellers',
+      isSortLocally: true,
+      sorted: {
+        id: headerConfig.find(item => item.sortable).id,
+        order: 'asc'
+      }
+    });
+
+    fetchMock.mockResponseOnce(JSON.stringify(bestsellers));
+
+    await sortableTable.render();
+
+    const [_, column2] = sortableTable.subElements.header.children;
+    const spy = jest.spyOn(sortableTable, 'sortOnClient');
+
+    const click = new MouseEvent('pointerdown', {
+      bubbles: true
+    });
+
+    column2.dispatchEvent(click);
+
+    expect(spy).toHaveBeenCalled();
+    expect(spy.mock.calls.length).toEqual(1);
+    expect(spy.mock.calls[0][0]).toEqual('title');
+    expect(spy.mock.calls[0][1]).toEqual('desc');
+  });
+
+  it('should call "sortOnServer" for sorting on the server side', async() => {
+    fetchMock.mockResponseOnce(JSON.stringify(products));
 
     await sortableTable.render();
 
