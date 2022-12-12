@@ -6,8 +6,7 @@ describe('async-code-fetch-api-part-1/column-chart', () => {
   let columnChart;
 
   beforeEach(() => {
-    fetchMock
-      .once(JSON.stringify(ordersData));
+    fetchMock.mockResponse(JSON.stringify(ordersData));
 
     columnChart = new ColumnChart({
       label: '',
@@ -23,12 +22,31 @@ describe('async-code-fetch-api-part-1/column-chart', () => {
     columnChart = null;
   });
 
-  it('should be rendered correctly', () => {
+  it('should be rendered correctly', async () => {
     expect(columnChart.element).toBeInTheDocument();
     expect(columnChart.element).toBeVisible();
   });
 
-  it('should have ability to define label', () => {
+  it('should load data correctly', async () => {
+    const from = new Date();
+    const to = new Date();
+    const data = await columnChart.update(from, to);
+
+    expect(data).toEqual(ordersData);
+  });
+
+  it('should render loaded data correctly', async () => {
+    const { body } = columnChart.subElements;
+    const expectedData = Object.values(ordersData);
+
+    const from = new Date();
+    const to = new Date();
+    await columnChart.update(from, to);
+
+    expect(body.children.length).toEqual(expectedData.length);
+  });
+
+  it('should have ability to define "label"', () => {
     const label = 'New label';
 
     columnChart = new ColumnChart({ label });
@@ -38,7 +56,7 @@ describe('async-code-fetch-api-part-1/column-chart', () => {
     expect(title).toHaveTextContent(label);
   });
 
-  it('should have ability to define link', () => {
+  it('should have ability to define "link"', () => {
     const link = 'https://google.com';
 
     columnChart = new ColumnChart({ link });
@@ -48,17 +66,10 @@ describe('async-code-fetch-api-part-1/column-chart', () => {
     expect(columnLink).toBeVisible();
   });
 
-  it('should have property \'chartHeight\'', () => {
+  it('should have property "chartHeight"', () => {
     columnChart = new ColumnChart();
 
     expect(columnChart.chartHeight).toEqual(50);
-  });
-
-  it('should render data correctly', () => {
-    const { body } = columnChart.subElements;
-    const data = Object.values(ordersData);
-
-    expect(body.children.length).toEqual(data.length);
   });
 
   it('should have ability to be update by new values', async () => {
@@ -68,8 +79,7 @@ describe('async-code-fetch-api-part-1/column-chart', () => {
       "2020-04-13": 20
     };
 
-    fetchMock
-      .once(JSON.stringify(data));
+    fetchMock.once(JSON.stringify(data));
 
     await columnChart.update(new Date('2020-04-06'), new Date('2020-05-06'));
 
